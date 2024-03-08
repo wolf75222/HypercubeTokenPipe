@@ -60,19 +60,19 @@ void create_hypercube_processes(int n) {
       
       for(int i = 0; i < n; i++) {
         int other_p = id_process ^ i;
-        pipe_ids_list[i] = (id_process & other_p) * n + (1 << i);
-        pipe_ids_list[i+1] = (id_process | other_p) * n + (1 << i);
+        pipe_ids_list[2*i] = (id_process & other_p) * n + (1 << i);
+        pipe_ids_list[2*i+1] = (id_process | other_p) * n + (1 << i);
         if(id_process < other_p) {
-          close(pipe_fds[pipe_ids_list[i]][1]); // close write
-          close(pipe_fds[pipe_ids_list[i+1]][0]); // close read
+          close(pipe_fds[pipe_ids_list[2*i]][1]); // close write
+          close(pipe_fds[pipe_ids_list[2*i+1]][0]); // close read
         }
         else {
-          close(pipe_fds[pipe_ids_list[i]][0]);
-          close(pipe_fds[pipe_ids_list[i+1]][1]);
+          close(pipe_fds[pipe_ids_list[2*i]][0]);
+          close(pipe_fds[pipe_ids_list[2*i+1]][1]);
         }
       }
       for (int i = 0; i < nb_pipes; i++) {
-        if(!isInTab(i, pipe_ids_list, n)) {
+        if(!isInTab(i, pipe_ids_list, 2*n)) {
           close(pipe_fds[i][0]);
           close(pipe_fds[i][1]);
         }
