@@ -5,11 +5,12 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-int pipe_fds[MAX_PROCESSES][2];
-pid_t child_pids[MAX_PROCESSES];
+int nb_pipes;
+int **pipe_fds;
+pid_t *child_pids;
 
 void init_pipes(int n) {
-  int nb_pipes = (1 << n) * n;
+  nb_pipes = (1 << n) * n;
   for (int i = 0; i < nb_pipes; i++) {
     if (pipe(pipe_fds[i]) == -1) {
       perror("Pipe initialization failed");
@@ -64,3 +65,18 @@ void wait_for_children(int n) {
     waitpid(child_pids[i], &status, 0);
   }
 }
+
+
+void free_pipes()
+{
+  for(int i = 0; i < nb_pipes; i++)
+  {
+    free(pipe_fds[i]);
+  }
+}
+
+void free_child_pids()
+{
+  free(child_pids);
+}
+
