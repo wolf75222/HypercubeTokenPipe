@@ -11,7 +11,20 @@ pid_t *child_pids;
 
 void init_pipes(int n) {
   nb_pipes = (1 << n) * n;
+  pipe_fds = (int **) malloc(nb_pipes * sizeof(int *));
+  if(pipe_fds == NULL)
+  {
+    perror("Pipe allocation failed 1");
+    exit(EXIT_FAILURE);
+  }
+
   for (int i = 0; i < nb_pipes; i++) {
+    pipe_fds[i] = (int) malloc(2 * sizeof(int));
+    if(pipe_fds[i] == NULL)
+    {
+      perror("Pipe allocation failed 2");
+      exit(EXIT_FAILURE);
+    }
     if (pipe(pipe_fds[i]) == -1) {
       perror("Pipe initialization failed");
       exit(EXIT_FAILURE);
@@ -79,4 +92,5 @@ void free_child_pids()
 {
   free(child_pids);
 }
+
 
