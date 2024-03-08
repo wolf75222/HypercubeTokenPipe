@@ -40,4 +40,4 @@ Le sujet du projet est disponible dans le fichier `TP.pdf`.
 ## Auteurs
 
 - Despoullains Romain
-- Cloé
+- Vautard Cloé
