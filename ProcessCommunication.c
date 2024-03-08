@@ -9,7 +9,7 @@ int pipe_fds[MAX_PROCESSES][2];
 pid_t child_pids[MAX_PROCESSES];
 
 void init_pipes(int n) {
-  int nb_pipes = 1 << n;
+  int nb_pipes = (1 << n) * n;
   for (int i = 0; i < nb_pipes; i++) {
     if (pipe(pipe_fds[i]) == -1) {
       perror("Pipe initialization failed");
