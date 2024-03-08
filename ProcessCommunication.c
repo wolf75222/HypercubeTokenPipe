@@ -39,39 +39,49 @@ void create_hypercube_processes(int n) {
   child_pids = (pid_t *) malloc(nb_processes * sizeof(pid_t));
   if(child_pids == NULL)
   {
-    perror("child_pids allocation failed 2");
+    perror("child_pids allocation failed");
     exit(EXIT_FAILURE);
   }
 
-  for (int i = 0; i < nb_processes; i++) {
+  for (int id_process = 0; id_process < nb_processes; id_process++) {
     pid_t pid = fork();
     if (pid == -1) {
       perror("Failed to fork");
       exit(EXIT_FAILURE);
     } else if (pid == 0) { // childs
-      for (int j = 0; j < nb_processes; j++) {
-        for (int k = 0; k < 2; k++) {
-          if (j != i) {
-            close(pipe_fds[j][k]);
-          }
-        }
-      }
+
       int bitDiffPos;
-      for (int j = 0; j < nb_processes; j++) {
-        if (difference1bit(i, j, &bitDiffPos)) {
-          if (i < j) {
-            close(pipe_fds[j][0]);
-          } else {
-            close(pipe_fds[j][1]);
-          }
-        } else {
-          close(pipe_fds[j][0]);
-          close(pipe_fds[j][1]);
+      int * pipe_ids_list = (int *) malloc(2*n * sizeof(int));
+      if(pipe_ids_list == NULL)
+      {
+        perror("pipe_ids_list allocation failed");
+        exit(EXIT_FAILURE);
+      }
+      
+      for(int i = 0; i < n; i++) {
+        int other_p = id_process ^ i;
+        pipe_ids_list[i] = (id_process & other_p) * n + (1 << i);
+        pipe_ids_list[i+1] = (id_process | other_p) * n + (1 << i);
+        if(id_process < other_p) {
+          close(pipe_fds[pipe_ids_list[i]][1]); // close write
+          close(pipe_fds[pipe_ids_list[i+1]][0]); // close read
+        }
+        else {
+          close(pipe_fds[pipe_ids_list[i]][0]);
+          close(pipe_fds[pipe_ids_list[i+1]][1]);
         }
       }
+      for (int i = 0; i < nb_pipes; i++) {
+        if(!isInTab(i, pipe_ids_list, n)) {
+          close(pipe_fds[i][0]);
+          close(pipe_fds[i][1]);
+        }
+      }
+
+      free(pipe_ids_list);
       exit(0);
     } else { // father
-      child_pids[i] = pid;
+      child_pids[id_process] = pid;
     }
   }
 

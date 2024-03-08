@@ -18,5 +18,7 @@ int main(int argc, char *argv[]) {
     
     wait_for_children(n);
 
+    free_pipes();
+    free_child_pids();
     return 0;
 }

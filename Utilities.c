@@ -15,3 +15,14 @@ int difference1bit(int a, int b, int *bitDiffPos) {
     return 0; // Retourner faux si plus d'un bit diffère
 }
 
+
+int isInTab(int val, int* tab, int size) {
+    for(int i; i < size; i++)
+    {
+        if(val == tab[i])
+            return 1;
+    }
+    return 0;
+}
+
+

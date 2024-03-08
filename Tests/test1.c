@@ -40,14 +40,11 @@ int main()
         {
             if(difference1bit(i, j, &bitDiffPos)) // si les 2 id ont 1 seul bit de différence
             {
-                // celui avec l'id le plus grand lit dans i | j et écrit dans id_processus i & j
+                // celui avec l'id le plus grand lit dans i | j (max) et écrit dans id_processus i & j (min)
                 // ici, on a toujours j > i
 
-                // printf("%d --> %d : %d - %d\n", i, j, j | i, bitDiffPos);
-                // printf("%d <-- %d : %d - %d\n", i, j, j & i, bitDiffPos);
-                
-                printf("%d --> %d : %d - %d\n", i, j, j | i, bitDiffPos);
-                printf("%d <-- %d : %d - %d\n", i, j, j & i, bitDiffPos);
+                printf("%d <-- %d : %d - %d \tid tube : %d\n", i, j, j & i, bitDiffPos, (j & i) * n + bitDiffPos);
+                printf("%d --> %d : %d - %d \tid tube : %d\n", i, j, j | i, bitDiffPos, (j | i) * n + bitDiffPos);
                 
                 // id1 <--> id2 : [...][...]
                 // (lire) <-- (écrire)
