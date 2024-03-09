@@ -88,6 +88,7 @@ void create_hypercube_processes(int n) {
         }
       }
 
+/*
   //TEST
     struct timeval tv;
     suseconds_t msec = 0;
@@ -116,7 +117,7 @@ void create_hypercube_processes(int n) {
 
         printf("\tid tube : %d\n", pipe_ids_list[2*rd+1]);
         write(pipe_fds[pipe_ids_list[2*rd+1]][1], &rd, sizeof(int));
-    } 
+    } */
 
 
       // close pipes
