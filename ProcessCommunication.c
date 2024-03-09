@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <time.h>
 
 int nb_pipes = 0;
 int nb_processes = 0;
@@ -63,9 +64,9 @@ void create_hypercube_processes(int n) {
       }
       
       for(int i = 0; i < n; i++) {
-        int other_p = id_process ^ i;
-        pipe_ids_list[2*i] = (id_process & other_p) * n + (1 << i);
-        pipe_ids_list[2*i+1] = (id_process | other_p) * n + (1 << i);
+        int other_p = id_process ^ (1 << i);
+        pipe_ids_list[2*i] = (id_process & other_p) * n + i;
+        pipe_ids_list[2*i+1] = (id_process | other_p) * n + i;
         if(id_process < other_p) {
           close(pipe_fds[pipe_ids_list[2*i]][1]); // close write
           close(pipe_fds[pipe_ids_list[2*i+1]][0]); // close read
@@ -86,7 +87,51 @@ void create_hypercube_processes(int n) {
         }
       }
 
-      
+/*  TEST
+    struct timeval tv;
+    suseconds_t msec = 0;
+    srand(time(NULL));
+    if(id_process == 0) {
+        
+        int rd = rand()%n;
+        int other = id_process ^ (1 << rd);
+        printf("id : %d --> %d", id_process, other);
+        
+        if(id_process < other)
+        {   
+            printf("\tid tube : %d -- %d\n", (id_process | other) * n + rd, pipe_ids_list[2*rd+1]);
+            write(pipe_fds[pipe_ids_list[2*rd+1]][1], &rd, sizeof(int));
+        }
+        else
+        {
+            printf("\tid tube : %d -- %d\n", (id_process & other) * n + rd, pipe_ids_list[2*rd]);
+            write(pipe_fds[pipe_ids_list[2*rd]][1], &rd, sizeof(int));
+        }
+    }
+    
+    while(1) {
+        
+        select(nfds+1, &readfds, NULL, NULL, NULL);
+        for(int i = 0; i < 2000000000; i++) ;
+        printf("id : %d\n", id_process);
+        gettimeofday(&tv, NULL);
+        msec = tv.tv_usec-msec;
+        int rd = rand()%n;
+        int other = id_process ^ (1 << rd);
+        printf("id : %d --> %d\n", id_process, other);
+
+        if(id_process < other)
+        {   
+            printf("\tid tube : %d -- %d\n", (id_process | other) * n + rd, pipe_ids_list[2*rd+1]);
+            write(pipe_fds[pipe_ids_list[2*rd+1]][1], &rd, sizeof(int));
+        }
+        else
+        {
+            printf("\tid tube : %d -- %d\n", (id_process & other) * n + rd, pipe_ids_list[2*rd]);
+            write(pipe_fds[pipe_ids_list[2*rd]][1], &rd, sizeof(int));
+        }
+    } */
+
 
       // close pipes
       for(int i = 0; i < n; i++) {
