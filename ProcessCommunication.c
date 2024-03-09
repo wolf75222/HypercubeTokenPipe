@@ -65,20 +65,21 @@ void create_hypercube_processes(int n) {
       
       for(int i = 0; i < n; i++) {
         int other_p = id_process ^ (1 << i);
-        pipe_ids_list[2*i] = (id_process & other_p) * n + i;
-        pipe_ids_list[2*i+1] = (id_process | other_p) * n + i;
+        
         if(id_process < other_p) {
+          pipe_ids_list[2*i] = (id_process & other_p) * n + i;
+          pipe_ids_list[2*i+1] = (id_process | other_p) * n + i;
           close(pipe_fds[pipe_ids_list[2*i]][1]); // close write
           close(pipe_fds[pipe_ids_list[2*i+1]][0]); // close read
-          FD_SET(pipe_fds[pipe_ids_list[2*i]][0], &readfds);
-          nfds = maximum(nfds, pipe_fds[pipe_ids_list[2*i]][0]);
         }
         else {
-          close(pipe_fds[pipe_ids_list[2*i]][0]);
-          close(pipe_fds[pipe_ids_list[2*i+1]][1]);
-          FD_SET(pipe_fds[pipe_ids_list[2*i+1]][0], &readfds);
-          nfds = maximum(nfds, pipe_fds[pipe_ids_list[2*i+1]][0]);
+          pipe_ids_list[2*i] = (id_process | other_p) * n + i;
+          pipe_ids_list[2*i+1] = (id_process & other_p) * n + i;
+          close(pipe_fds[pipe_ids_list[2*i]][1]);
+          close(pipe_fds[pipe_ids_list[2*i+1]][0]);
         }
+        FD_SET(pipe_fds[pipe_ids_list[2*i]][0], &readfds);
+        nfds = maximum(nfds, pipe_fds[pipe_ids_list[2*i]][0]);
       }
       for (int i = 0; i < nb_pipes; i++) {
         if(!isInTab(i, pipe_ids_list, 2*n)) {
@@ -87,7 +88,7 @@ void create_hypercube_processes(int n) {
         }
       }
 
-/*  TEST
+  //TEST
     struct timeval tv;
     suseconds_t msec = 0;
     srand(time(NULL));
@@ -96,17 +97,10 @@ void create_hypercube_processes(int n) {
         int rd = rand()%n;
         int other = id_process ^ (1 << rd);
         printf("id : %d --> %d", id_process, other);
+
+        printf("\tid tube : %d\n", pipe_ids_list[2*rd+1]);
+        write(pipe_fds[pipe_ids_list[2*rd+1]][1], &rd, sizeof(int));
         
-        if(id_process < other)
-        {   
-            printf("\tid tube : %d -- %d\n", (id_process | other) * n + rd, pipe_ids_list[2*rd+1]);
-            write(pipe_fds[pipe_ids_list[2*rd+1]][1], &rd, sizeof(int));
-        }
-        else
-        {
-            printf("\tid tube : %d -- %d\n", (id_process & other) * n + rd, pipe_ids_list[2*rd]);
-            write(pipe_fds[pipe_ids_list[2*rd]][1], &rd, sizeof(int));
-        }
     }
     
     while(1) {
@@ -120,17 +114,9 @@ void create_hypercube_processes(int n) {
         int other = id_process ^ (1 << rd);
         printf("id : %d --> %d\n", id_process, other);
 
-        if(id_process < other)
-        {   
-            printf("\tid tube : %d -- %d\n", (id_process | other) * n + rd, pipe_ids_list[2*rd+1]);
-            write(pipe_fds[pipe_ids_list[2*rd+1]][1], &rd, sizeof(int));
-        }
-        else
-        {
-            printf("\tid tube : %d -- %d\n", (id_process & other) * n + rd, pipe_ids_list[2*rd]);
-            write(pipe_fds[pipe_ids_list[2*rd]][1], &rd, sizeof(int));
-        }
-    } */
+        printf("\tid tube : %d\n", pipe_ids_list[2*rd+1]);
+        write(pipe_fds[pipe_ids_list[2*rd+1]][1], &rd, sizeof(int));
+    } 
 
 
       // close pipes
