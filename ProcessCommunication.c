@@ -8,18 +8,42 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
+#include <dirent.h>
+#include <fcntl.h>
 
 int nb_pipes = 0;
 int nb_processes = 0;
 int **pipe_fds = NULL;
 pid_t *child_pids = NULL;
 
+// Delete files created during previous execution
+void delete_previous_files() 
+{
+    DIR *directory;
+    struct dirent *de;
+
+    directory = opendir("./");
+    if(directory == NULL)
+    {
+      fprintf(stderr, "Unable to open current directory\n");
+      exit(EXIT_FAILURE);
+    }
+    while((de = readdir(directory)) != NULL)
+    {
+        if(hasToBeUnlink(de->d_name))
+        {
+            unlink(de->d_name);
+        }
+    }
+    closedir(directory);
+}
+
 void init_pipes(int n) {
   nb_pipes = (1 << n) * n;
   pipe_fds = (int **) malloc(nb_pipes * sizeof(int *));
   if(pipe_fds == NULL)
   {
-    perror("Pipe allocation failed 1");
+    fprintf(stderr, "Pipe allocation failed 1");
     exit(EXIT_FAILURE);
   }
 
@@ -27,7 +51,7 @@ void init_pipes(int n) {
     pipe_fds[i] = (int *) malloc(2 * sizeof(int));
     if(pipe_fds[i] == NULL)
     {
-      perror("Pipe allocation failed 2");
+      fprintf(stderr, "Pipe allocation failed 2");
       exit(EXIT_FAILURE);
     }
     if (pipe(pipe_fds[i]) == -1) {
@@ -43,7 +67,7 @@ void create_hypercube_processes(int n) {
   child_pids = (pid_t *) malloc(nb_processes * sizeof(pid_t));
   if(child_pids == NULL)
   {
-    perror("child_pids allocation failed");
+    fprintf(stderr, "child_pids allocation failed");
     exit(EXIT_FAILURE);
   }
 
@@ -59,7 +83,7 @@ void create_hypercube_processes(int n) {
       int * pipe_ids_list = (int *) malloc(2*n * sizeof(int));
       if(pipe_ids_list == NULL)
       {
-        perror("pipe_ids_list allocation failed");
+        fprintf(stderr, "pipe_ids_list allocation failed");
         exit(EXIT_FAILURE);
       }
       
@@ -88,8 +112,57 @@ void create_hypercube_processes(int n) {
         }
       }
 
-/*
-  //TEST
+
+      token_journey(id_process, pipe_ids_list, n);
+
+
+      // close pipes
+      for(int i = 0; i < n; i++) {
+        int other_p = id_process ^ i;
+        if(id_process < other_p) {
+          close(pipe_fds[pipe_ids_list[2*i]][0]);
+          close(pipe_fds[pipe_ids_list[2*i+1]][1]);
+        }
+        else {
+          close(pipe_fds[pipe_ids_list[2*i]][1]);
+          close(pipe_fds[pipe_ids_list[2*i+1]][0]);
+        }
+      }
+      free(pipe_ids_list);
+      exit(0);
+    } else { // father
+      child_pids[id_process] = pid;
+      // close all pipes
+      for (int i = 0; i < nb_pipes; i++) {
+        close(pipe_fds[i][0]);
+        close(pipe_fds[i][1]);
+      }
+    }
+  }
+
+  
+  for (int i = 0; i < nb_pipes; i++) {
+    close(pipe_fds[i][0]);
+    close(pipe_fds[i][1]);
+  }
+}
+
+
+void token_journey(int id_process, int *pipe_ids_list, int n)
+{
+    char file_name[256];
+    int file;
+
+    sprintf(file_name, "%d.txt", id_process);
+    file = open(file_name, O_CREAT, 0666);
+    if(file == -1)
+    {
+      perror("Failed to open a file");
+      exit(EXIT_FAILURE);
+    }
+
+    /*
+      //  TEST
     int itter = 0;
     struct timeval tv;
     suseconds_t msec = 0;
@@ -121,34 +194,11 @@ void create_hypercube_processes(int n) {
         write(pipe_fds[pipe_ids_list[2*rd+1]][1], &rd, sizeof(int));
     } */
 
-
-      // close pipes
-      for(int i = 0; i < n; i++) {
-        int other_p = id_process ^ i;
-        if(id_process < other_p) {
-          close(pipe_fds[pipe_ids_list[2*i]][0]);
-          close(pipe_fds[pipe_ids_list[2*i+1]][1]);
-        }
-        else {
-          close(pipe_fds[pipe_ids_list[2*i]][1]);
-          close(pipe_fds[pipe_ids_list[2*i+1]][0]);
-        }
-      }
-      free(pipe_ids_list);
-      free_pipes();
-      free_child_pids();
-      exit(0);
-    } else { // father
-      child_pids[id_process] = pid;
-    }
-  }
-
-  
-  for (int i = 0; i < nb_pipes; i++) {
-    close(pipe_fds[i][0]);
-    close(pipe_fds[i][1]);
-  }
+    close(file);
+    return 0;
 }
+
+
 
 void wait_for_children(int n) {
   for (int i = 0; i < nb_processes; i++) {

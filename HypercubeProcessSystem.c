@@ -12,13 +12,27 @@ int main(int argc, char *argv[]) {
     }
 
     int n = atoi(argv[1]);
+
+    int atex = atexit(free_pipes);
+    if(atex != 0)
+    {
+        fprintf(stderr, "atexit() error 1\n");
+        exit(EXIT_FAILURE);
+    }
+    atex = atexit(free_child_pids);
+    if(atex != 0)
+    {
+        fprintf(stderr, "atexit() error 2\n");
+        exit(EXIT_FAILURE);
+    }
+
     init_signal_handlers();
+    delete_previous_files();
     init_pipes(n);
     create_hypercube_processes(n);
     
     wait_for_children(n);
 
-    free_pipes();
-    free_child_pids();
     return 0;
 }
+

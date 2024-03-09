@@ -34,3 +34,19 @@ int isInTab(int val, int* tab, int size) {
 }
 
 
+int hasToBeUnlink(char file_name[256])
+{
+    int c;
+    int hasTo = 0;
+    while((c = file_name[0]) != 0 && c >= '0' && c <= '9')
+    {
+        file_name++;
+    }
+    if(c == '.' && file_name[1] == 't' && file_name[2] == 'x' && file_name[3] == 't' && file_name[4] == 0)
+    {
+        hasTo = 1;
+    }
+    return hasTo;
+}
+
+
