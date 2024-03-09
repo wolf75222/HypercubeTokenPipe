@@ -195,7 +195,6 @@ void token_journey(int id_process, int *pipe_ids_list, int n)
     } */
 
     close(file);
-    return 0;
 }
 
 
