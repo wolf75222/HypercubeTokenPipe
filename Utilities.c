@@ -15,6 +15,14 @@ int difference1bit(int a, int b, int *bitDiffPos) {
     return 0; // Retourner faux si plus d'un bit diffère
 }
 
+int maximum(int a, int b)
+{
+    if (a > b)
+        return a;
+    else
+        return b;
+}
+
 
 int isInTab(int val, int* tab, int size) {
     for(int i; i < size; i++)

@@ -2,7 +2,10 @@
 #include "Utilities.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #include <sys/wait.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 int nb_pipes = 0;
@@ -49,8 +52,9 @@ void create_hypercube_processes(int n) {
       perror("Failed to fork");
       exit(EXIT_FAILURE);
     } else if (pid == 0) { // childs
-
-      int bitDiffPos;
+      fd_set readfds;
+      int nfds = 0;
+      FD_ZERO(&readfds);
       int * pipe_ids_list = (int *) malloc(2*n * sizeof(int));
       if(pipe_ids_list == NULL)
       {
@@ -65,10 +69,14 @@ void create_hypercube_processes(int n) {
         if(id_process < other_p) {
           close(pipe_fds[pipe_ids_list[2*i]][1]); // close write
           close(pipe_fds[pipe_ids_list[2*i+1]][0]); // close read
+          FD_SET(pipe_fds[pipe_ids_list[2*i]][0], &readfds);
+          nfds = maximum(nfds, pipe_fds[pipe_ids_list[2*i]][0]);
         }
         else {
           close(pipe_fds[pipe_ids_list[2*i]][0]);
           close(pipe_fds[pipe_ids_list[2*i+1]][1]);
+          FD_SET(pipe_fds[pipe_ids_list[2*i+1]][0], &readfds);
+          nfds = maximum(nfds, pipe_fds[pipe_ids_list[2*i+1]][0]);
         }
       }
       for (int i = 0; i < nb_pipes; i++) {
@@ -78,7 +86,23 @@ void create_hypercube_processes(int n) {
         }
       }
 
+      
+
+      // close pipes
+      for(int i = 0; i < n; i++) {
+        int other_p = id_process ^ i;
+        if(id_process < other_p) {
+          close(pipe_fds[pipe_ids_list[2*i]][0]);
+          close(pipe_fds[pipe_ids_list[2*i+1]][1]);
+        }
+        else {
+          close(pipe_fds[pipe_ids_list[2*i]][1]);
+          close(pipe_fds[pipe_ids_list[2*i+1]][0]);
+        }
+      }
       free(pipe_ids_list);
+      free_pipes();
+      free_child_pids();
       exit(0);
     } else { // father
       child_pids[id_process] = pid;
