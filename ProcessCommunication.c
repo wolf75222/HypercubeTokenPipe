@@ -90,11 +90,12 @@ void create_hypercube_processes(int n) {
 
 /*
   //TEST
+    int itter = 0;
     struct timeval tv;
     suseconds_t msec = 0;
     srand(time(NULL));
     if(id_process == 0) {
-        
+        itter = 1;
         int rd = rand()%n;
         int other = id_process ^ (1 << rd);
         printf("id : %d --> %d", id_process, other);
@@ -104,11 +105,12 @@ void create_hypercube_processes(int n) {
         
     }
     
-    while(1) {
+    while(itter != 2) {
         
         select(nfds+1, &readfds, NULL, NULL, NULL);
         for(int i = 0; i < 2000000000; i++) ;
-        printf("id : %d\n", id_process);
+        itter ++;
+        printf("id : %d -- it : %d\n", id_process, itter);
         gettimeofday(&tv, NULL);
         msec = tv.tv_usec-msec;
         int rd = rand()%n;
