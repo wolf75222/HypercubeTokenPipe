@@ -1,0 +1,45 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{graphicx}
+\usepackage{mesboites}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textbf{\CoursCode}}
+\rhead{\textbf{\ProjetNom}}
+\lfoot{\textbf{\AuteurNom}}
+\rfoot{\textbf{Page \thepage  / \pageref{LastPage}}}
+\renewcommand{\headrulewidth}{2pt}
+\renewcommand{\footrulewidth}{2pt}
+
+\newcommand{\CoursCode}{MINF0401}
+\newcommand{\ProjetNom}{MIRAGE}
+\newcommand{\AuteurNom}{DESPOULLAINS ROMAIN}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    \textbf{\LARGE \CoursCode}\
+    \vspace{0.5cm}
+    {\Large Mathématiques pour l'informatique}\
+    \vfill
+    \includegraphics[width=0.6\textwidth]{images/mirage.jpg}
+    {\Huge \textbf{Fiche Revision - Statistique Descriptive}}\
+    \vspace{1cm}
+    {\Large \textbf{\AuteurNom}}\
+    \vfill
+    {\Large \ProjetNom}
+\end{titlepage}
+
+\tableofcontents
+\pagebreak
+
+\end{document}

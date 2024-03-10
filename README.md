@@ -1,6 +1,6 @@
 # Hypercube Process System (HPS)
 
-![](hypercube.png)
+![](docs/hypercube.png)
 
 ## À propos du projet
 
@@ -23,6 +23,13 @@ Un `Makefile` est fourni pour faciliter la compilation du projet. Pour compiler 
 make all
 ```
 
+Clean : 
+
+```bash
+make clean
+```
+
+
 Cela générera l'exécutable `hypercube`.
 
 ## Exécution
@@ -36,6 +43,17 @@ Pour exécuter le programme, utilisez la commande suivante, où `n` est la dimen
 ## Sujet du projet
 
 Le sujet du projet est disponible dans le fichier `TP.pdf`.
+
+
+## Todo
+
+- Parcours du jeton et affichage des ms (token_journey)
+- Signaux 
+- Rapport
+- Récuperer le jeton et ++ et affichage (token_journey)
+- Check valgrind
+
+
 
 ## Auteurs
 

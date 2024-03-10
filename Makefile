@@ -1,20 +1,20 @@
 CC=gcc
-CFLAGS=-Wall
+CFLAGS=-Wall -Iinclude
 LDFLAGS=
-SOURCES=HypercubeProcessSystem.c ProcessCommunication.c SignalHandlers.c Utilities.c
-OBJECTS=$(SOURCES:.c=.o)
-EXECUTABLE=hypercube
+SOURCES=$(addprefix src/,HypercubeProcessSystem.c ProcessCommunication.c SignalHandlers.c Utilities.c)
+OBJECTS=$(addprefix build/,$(notdir $(SOURCES:.c=.o)))
+EXECUTABLE=build/hypercube
 
 all: $(SOURCES) $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJECTS) 
+$(EXECUTABLE): $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 
-.c.o:
+build/%.o: src/%.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	rm -f *.o $(EXECUTABLE)
+	rm -f build/*.o build/$(EXECUTABLE)
 
 test: $(EXECUTABLE)
-	./$(EXECUTABLE) 3
+
