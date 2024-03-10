@@ -1,0 +1,6 @@
+# Ignorer les fichiers .DS_Store sur macOS
+.DS_Store
+
+# Ignorer le dossier de configuration de VSCode
+.vscode/
+
