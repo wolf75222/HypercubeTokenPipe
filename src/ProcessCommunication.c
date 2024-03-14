@@ -77,9 +77,9 @@ void create_hypercube_processes(int n) {
       perror("Failed to fork");
       exit(EXIT_FAILURE);
     } else if (pid == 0) { // childs
-      fd_set readfds;
+      
       int nfds = 0;
-      FD_ZERO(&readfds);
+      
       int * pipe_ids_list = (int *) malloc(2*n * sizeof(int));
       if(pipe_ids_list == NULL)
       {
@@ -89,7 +89,14 @@ void create_hypercube_processes(int n) {
       
       for(int i = 0; i < n; i++) {
         int other_p = id_process ^ (1 << i);
+
+  
+        pipe_ids_list[2*i] = id_process * n + i;
+          pipe_ids_list[2*i+1] = other_p * n + i;
+          //close(pipe_fds[pipe_ids_list[2*i]][1]);
+          //close(pipe_fds[pipe_ids_list[2*i+1]][0]);
         
+        /*
         if(id_process < other_p) {
           pipe_ids_list[2*i] = (id_process & other_p) * n + i;
           pipe_ids_list[2*i+1] = (id_process | other_p) * n + i;
@@ -101,22 +108,25 @@ void create_hypercube_processes(int n) {
           pipe_ids_list[2*i+1] = (id_process & other_p) * n + i;
           close(pipe_fds[pipe_ids_list[2*i]][1]);
           close(pipe_fds[pipe_ids_list[2*i+1]][0]);
-        }
-        FD_SET(pipe_fds[pipe_ids_list[2*i]][0], &readfds);
+        }*/
+        // FD_SET(pipe_fds[pipe_ids_list[2*i]][0], &readfds);
         nfds = maximum(nfds, pipe_fds[pipe_ids_list[2*i]][0]);
       }
+
+      
       for (int i = 0; i < nb_pipes; i++) {
         if(!isInTab(i, pipe_ids_list, 2*n)) {
-          close(pipe_fds[i][0]);
-          close(pipe_fds[i][1]);
+          //close(pipe_fds[i][0]);
+          //close(pipe_fds[i][1]);
         }
       }
 
 
-      token_journey(id_process, pipe_ids_list, n);
+      token_journey(id_process, pipe_ids_list, n, nfds);
 
 
       // close pipes
+      
       for(int i = 0; i < n; i++) {
         int other_p = id_process ^ i;
         if(id_process < other_p) {
@@ -148,9 +158,12 @@ void create_hypercube_processes(int n) {
 }
 
 
-void token_journey(int id_process, int *pipe_ids_list, int n) {
+void token_journey(int id_process, int *pipe_ids_list, int n, int nfds) {
     char file_name[256];
     int file;
+    fd_set readfds;
+    int pipe_index;
+    struct timeval timeBetweenProcess;
 
     sprintf(file_name, "%d.txt", id_process);
     file = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0666);
@@ -159,57 +172,69 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
         exit(EXIT_FAILURE);
     }
 
+    int token = 0;
     srand(time(NULL) + id_process);
 
+    if(id_process == 1 || id_process == 2 || id_process == 4) {
+      sleep(id_process);
+      printf("Tubes de lecture du processus %d :", id_process);
+      for(int i = 0; i < n; i++)
+      {
+        printf("%d, ", pipe_ids_list[2 * i]);
+      }
+      printf("\n");
+    }
+
     if (id_process == 0) {
-        int token = 0;
-        int pipe_index = rand() % n;
+
+      printf("Tubes d'ecriture du processus 0 :");
+      for(int i = 0; i < n; i++)
+      {
+        printf("%d, ", pipe_ids_list[2 * i + 1]);
+      }
+      printf("\n");
+        
+        pipe_index = rand() % n;
         dprintf(file, "Starting token: %d\n", token);
 
-        if (write(pipe_fds[pipe_ids_list[2 * pipe_index + 1]], &token, sizeof(token)) == -1) {
+        printf("rand : %d", pipe_index);
+        printf("\t\tid tube : %d\n", pipe_ids_list[2*pipe_index+1]);
+        printf("\t\tid process : %d\n", id_process);
+        if (write(pipe_fds[pipe_ids_list[2 * pipe_index + 1]][1], &token, sizeof(int)) == -1) {
+            printf("pid : %d\n", getpid());
             perror("Write to pipe failed");
             exit(EXIT_FAILURE);
         }
-    } else {
-        int token;
-        fd_set read_fds;
-        FD_ZERO(&read_fds);
-        int read_fd = pipe_fds[pipe_ids_list[2 * (id_process % n)]];
-        FD_SET(read_fd, &read_fds);
+        printf("Ok!\n");
+    } 
 
-        struct timeval timeout;
-        timeout.tv_sec = 5; // Timeout after 5 seconds
-        timeout.tv_usec = 0;
 
-        int retval = select(read_fd + 1, &read_fds, NULL, NULL, &timeout);
-        if (retval == -1) {
-            perror("Select failed");
-            exit(EXIT_FAILURE);
-        } else if (retval) {
-            if (FD_ISSET(read_fd, &read_fds)) {
-                if (read(read_fd, &token, sizeof(token)) == -1) {
-                    perror("Read from pipe failed");
-                    exit(EXIT_FAILURE);
-                }
+    while(1)
+    {
+      suseconds_t msec = 0;
+      FD_ZERO(&readfds);
+      for(int i = 0; i < n; i++)
+      {
+        FD_SET(pipe_fds[pipe_ids_list[2*i]][0], &readfds);
+      }
+      select(nfds+1, &readfds, NULL, NULL, NULL);
+      printf("\nOk : %d\n", id_process);
+      // TODO : Add ms to file 
+      // with gettimeofday(&tv, NULL);
+      gettimeofday(&timeBetweenProcess, NULL);
+      token++;
+      msec = timeBetweenProcess.tv_usec - msec;
+      dprintf(file, "Token: %d, Time between processes: %ld\n", token, msec);
+      //write(file, &msec, sizeof(msec));
+      //write(file, "\n", 1);
 
-                dprintf(file, "Received token: %d by process %d\n", token, id_process);
-
-                token++;
-
-                int next_pipe_index = rand() % n;
-                dprintf(file, "Passing token: %d to next\n", token);
-
-                if (write(pipe_fds[pipe_ids_list[2 * next_pipe_index + 1]], &token, sizeof(token)) == -1) {
-                    perror("Write to pipe failed");
-                    exit(EXIT_FAILURE);
-                }
-            } else {
-                printf("No data within five seconds.\n");
-            }
-        } else {
-            printf("Timeout: No data within five seconds.\n");
-        }
-    }
+      pipe_index = rand() % n;
+      if (write(pipe_fds[pipe_ids_list[2 * pipe_index + 1]][1], &token, sizeof(token)) == -1) {
+        perror("Write to pipe failed");
+        exit(EXIT_FAILURE);
+      }
+    }  
+  
 
     close(file);
 }
@@ -236,5 +261,3 @@ void free_child_pids()
 {
   free(child_pids);
 }
-
-
