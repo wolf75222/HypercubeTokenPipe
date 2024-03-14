@@ -25,10 +25,16 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "atexit() error 2\n");
         exit(EXIT_FAILURE);
     }
-
+    
+    printf("HypercubeProcessSystem: %d\n", getpid());
+    printf("Dimension: %d\n", n);
+    printf("Initializing...\n");
     init_signal_handlers();
+    printf("delete_previous_files...\n");
     delete_previous_files();
+    printf("init_pipes...\n");
     init_pipes(n);
+    printf("create_hypercube_processes...\n");
     create_hypercube_processes(n);
     
     wait_for_children(n);

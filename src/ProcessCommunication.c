@@ -148,53 +148,71 @@ void create_hypercube_processes(int n) {
 }
 
 
-void token_journey(int id_process, int *pipe_fds, int n) {
+void token_journey(int id_process, int *pipe_ids_list, int n) {
     char file_name[256];
     int file;
-    
+
     sprintf(file_name, "%d.txt", id_process);
     file = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0666);
     if (file == -1) {
-        perror("Failed to open a file");
+        perror("Failed to open file");
         exit(EXIT_FAILURE);
     }
-    srand(time(NULL) + id_process); 
+
+    srand(time(NULL) + id_process);
+
     if (id_process == 0) {
-        int token = 0; 
-        int pipe_index = rand() % n; 
-        dprintf(file, "Starting token: %d\n", token); 
-        
-        
-        if (write(pipe_fds[2 * pipe_index + 1], &token, sizeof(token)) == -1) {
+        int token = 0;
+        int pipe_index = rand() % n;
+        dprintf(file, "Starting token: %d\n", token);
+
+        if (write(pipe_fds[pipe_ids_list[2 * pipe_index + 1]], &token, sizeof(token)) == -1) {
             perror("Write to pipe failed");
             exit(EXIT_FAILURE);
         }
     } else {
-        
         int token;
-        if (read(pipe_fds[2 * (id_process % n)], &token, sizeof(token)) == -1) {
-            perror("Read from pipe failed");
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        int read_fd = pipe_fds[pipe_ids_list[2 * (id_process % n)]];
+        FD_SET(read_fd, &read_fds);
+
+        struct timeval timeout;
+        timeout.tv_sec = 5; // Timeout after 5 seconds
+        timeout.tv_usec = 0;
+
+        int retval = select(read_fd + 1, &read_fds, NULL, NULL, &timeout);
+        if (retval == -1) {
+            perror("Select failed");
             exit(EXIT_FAILURE);
-        }
-        
-        dprintf(file, "Received token: %d by process %d\n", token, id_process); 
-        
-        token++; 
-        
-        int next_pipe_index = rand() % n;
-        dprintf(file, "Passing token: %d to next\n", token); 
-        
-        
-        if (write(pipe_fds[2 * next_pipe_index + 1], &token, sizeof(token)) == -1) {
-            perror("Write to pipe failed");
-            exit(EXIT_FAILURE);
+        } else if (retval) {
+            if (FD_ISSET(read_fd, &read_fds)) {
+                if (read(read_fd, &token, sizeof(token)) == -1) {
+                    perror("Read from pipe failed");
+                    exit(EXIT_FAILURE);
+                }
+
+                dprintf(file, "Received token: %d by process %d\n", token, id_process);
+
+                token++;
+
+                int next_pipe_index = rand() % n;
+                dprintf(file, "Passing token: %d to next\n", token);
+
+                if (write(pipe_fds[pipe_ids_list[2 * next_pipe_index + 1]], &token, sizeof(token)) == -1) {
+                    perror("Write to pipe failed");
+                    exit(EXIT_FAILURE);
+                }
+            } else {
+                printf("No data within five seconds.\n");
+            }
+        } else {
+            printf("Timeout: No data within five seconds.\n");
         }
     }
 
-    close(file); 
+    close(file);
 }
-
-
 
 void wait_for_children(int n) {
   for (int i = 0; i < nb_processes; i++) {
