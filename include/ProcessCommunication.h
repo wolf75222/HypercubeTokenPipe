@@ -7,7 +7,7 @@ void delete_previous_files();
 
 void init_pipes(int n);
 void create_hypercube_processes(int n);
-void token_journey(int id_process, int *pipe_ids_list, int n, int nfds);
+void token_journey(int id_process, int *pipe_ids_list, int n);
 void wait_for_children(int n);
 
 void free_pipes();

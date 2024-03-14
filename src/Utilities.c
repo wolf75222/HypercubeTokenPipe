@@ -25,7 +25,7 @@ int maximum(int a, int b)
 
 
 int isInTab(int val, int* tab, int size) {
-    for(int i; i < size; i++)
+    for(int i = 0; i < size; i++)
     {
         if(val == tab[i])
             return 1;
