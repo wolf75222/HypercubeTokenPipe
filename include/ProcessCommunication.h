@@ -12,4 +12,5 @@ void wait_for_children(int n);
 
 void free_pipes();
 void free_child_pids();
+void free_pipe_ids_list();
 #endif

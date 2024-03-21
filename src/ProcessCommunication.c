@@ -1,5 +1,6 @@
 #include "ProcessCommunication.h"
 #include "Utilities.h"
+#include "SignalHandlers.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/select.h>
@@ -15,6 +16,7 @@ int nb_pipes = 0;
 int nb_processes = 0;
 int **pipe_fds = NULL;
 pid_t *child_pids = NULL;
+int * pipe_ids_list = NULL;
 
 // Delete files created during previous execution
 void delete_previous_files() 
@@ -46,6 +48,11 @@ void init_pipes(int n) {
     fprintf(stderr, "Pipe allocation failed 1");
     exit(EXIT_FAILURE);
   }
+  if(atexit(free_pipes) != 0)
+  {
+    fprintf(stderr, "atexit() error for free_pipes\n");
+    exit(EXIT_FAILURE);
+  }
 
   printf("Tubes :");
   for (int i = 0; i < nb_pipes; i++) {
@@ -73,6 +80,11 @@ void create_hypercube_processes(int n) {
     fprintf(stderr, "child_pids allocation failed");
     exit(EXIT_FAILURE);
   }
+  if(atexit(free_child_pids) != 0)
+  {
+    fprintf(stderr, "atexit() error for free_child_pids\n");
+    exit(EXIT_FAILURE);
+  }
 
   for (int id_process = 0; id_process < nb_processes; id_process++) {
     pid_t pid = fork();
@@ -81,10 +93,15 @@ void create_hypercube_processes(int n) {
       exit(EXIT_FAILURE);
     } else if (pid == 0) { // childs
       
-      int * pipe_ids_list = (int *) malloc(2*n * sizeof(int));
+      pipe_ids_list = (int *) malloc(2*n * sizeof(int));
       if(pipe_ids_list == NULL)
       {
         fprintf(stderr, "pipe_ids_list allocation failed");
+        exit(EXIT_FAILURE);
+      }
+      if(atexit(free_pipe_ids_list) != 0)
+      {
+        fprintf(stderr, "atexit() error for free_pipe_ids_list\n");
         exit(EXIT_FAILURE);
       }
       
@@ -122,6 +139,8 @@ void create_hypercube_processes(int n) {
       child_pids[id_process] = pid;
     }
   }
+
+  signal(SIGUSR1, handle_sigusr1);
 
   // close all pipes
   for (int i = 0; i < nb_pipes; i++) {
@@ -176,13 +195,13 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
       int nfds = 0;
       
       do {
-        
+        /*
         if(select_return == -1)
         {
           printf("error id : %d\n", id_process);
           perror("Select failed");
           exit(EXIT_FAILURE);
-        }
+        }*/
 
         FD_ZERO(&readfds);
         nfds = 0;
@@ -261,4 +280,9 @@ void free_pipes()
 void free_child_pids()
 {
   free(child_pids);
+}
+
+void free_pipe_ids_list()
+{
+  free(pipe_ids_list);
 }

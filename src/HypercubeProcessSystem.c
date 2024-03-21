@@ -12,24 +12,11 @@ int main(int argc, char *argv[]) {
     }
 
     int n = atoi(argv[1]);
-
-    int atex = atexit(free_pipes);
-    if(atex != 0)
-    {
-        fprintf(stderr, "atexit() error 1\n");
-        exit(EXIT_FAILURE);
-    }
-    atex = atexit(free_child_pids);
-    if(atex != 0)
-    {
-        fprintf(stderr, "atexit() error 2\n");
-        exit(EXIT_FAILURE);
-    }
     
     printf("HypercubeProcessSystem: %d\n", getpid());
     printf("Dimension: %d\n", n);
     printf("Initializing...\n");
-    init_signal_handlers();
+    // init_signal_handlers();
     printf("delete_previous_files...\n");
     delete_previous_files();
     printf("init_pipes...\n");

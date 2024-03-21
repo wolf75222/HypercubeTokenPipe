@@ -3,15 +3,24 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <fcntl.h>
+
+extern int nb_processes;
+extern pid_t *child_pids;
 
 volatile sig_atomic_t suspend_flag = 0;
 
 void handle_sigusr1(int sig) {
   suspend_flag = !suspend_flag;
+  signal(sig, handle_sigusr1);
   if (suspend_flag) {
     // Logique pour suspendre les processus
+    for(int i = 0; i < nb_processes; i++)
+      kill(child_pids[i], SIGSTOP);
   } else {
     // Logique pour reprendre les processus
+    for(int i = 0; i < nb_processes; i++)
+      kill(child_pids[i], SIGCONT);
   }
 }
 
@@ -20,6 +29,7 @@ void handle_sigint(int sig) {
   exit(0);
 }
 
+/*
 void init_signal_handlers() {
   struct sigaction sa_usr1, sa_int;
   sa_usr1.sa_handler = handle_sigusr1;
@@ -37,4 +47,4 @@ void init_signal_handlers() {
     perror("Error setting SIGINT handler");
     exit(EXIT_FAILURE);
   }
-}
+}*/
