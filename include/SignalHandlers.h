@@ -1,11 +1,15 @@
 #ifndef SIGNALHANDLERS_H
 #define SIGNALHANDLERS_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <signal.h>
+#include <fcntl.h>
 
-void handle_sigusr1(int sig);
-void handle_sigint(int sig);
-// void init_signal_handlers();
+
+void father_handler(int sig);
+void child_sigint_handler(int sig);
 
 #endif
 

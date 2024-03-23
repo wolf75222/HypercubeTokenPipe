@@ -3,6 +3,7 @@
         "cstdlib": "c",
         "unistd.h": "c",
         "time.h": "c",
-        "processcommunication.h": "c"
+        "processcommunication.h": "c",
+        "signal.h": "c"
     }
 }

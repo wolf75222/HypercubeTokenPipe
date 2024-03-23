@@ -26,6 +26,6 @@ int main(int argc, char *argv[]) {
     
     wait_for_children(n);
 
-    return 0;
+    exit(0);
 }
 

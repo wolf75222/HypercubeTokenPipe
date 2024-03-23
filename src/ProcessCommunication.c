@@ -1,22 +1,11 @@
 #include "ProcessCommunication.h"
-#include "Utilities.h"
-#include "SignalHandlers.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/select.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <time.h>
-#include <dirent.h>
-#include <fcntl.h>
 
 int nb_pipes = 0;
 int nb_processes = 0;
 int **pipe_fds = NULL;
 pid_t *child_pids = NULL;
 int * pipe_ids_list = NULL;
+int continue_communication = 1;
 
 // Delete files created during previous execution
 void delete_previous_files() 
@@ -42,7 +31,7 @@ void delete_previous_files()
 
 void init_pipes(int n) {
   nb_pipes = (1 << n) * n;
-  pipe_fds = (int **) malloc(nb_pipes * sizeof(int *));
+  pipe_fds = (int **) calloc(nb_pipes, sizeof(int *));
   if(pipe_fds == NULL)
   {
     fprintf(stderr, "Pipe allocation failed 1");
@@ -92,6 +81,8 @@ void create_hypercube_processes(int n) {
       perror("Failed to fork");
       exit(EXIT_FAILURE);
     } else if (pid == 0) { // childs
+
+      signal(SIGINT, child_sigint_handler);
       
       pipe_ids_list = (int *) malloc(2*n * sizeof(int));
       if(pipe_ids_list == NULL)
@@ -132,7 +123,6 @@ void create_hypercube_processes(int n) {
       for(int i = 0; i < 2*n; i++) {
         close(pipe_ids_list[i]);
       }
-      free(pipe_ids_list);
       exit(0);
 
     } else { // father
@@ -140,7 +130,9 @@ void create_hypercube_processes(int n) {
     }
   }
 
-  signal(SIGUSR1, handle_sigusr1);
+  // gestion des signaux recu par le pere
+  signal(SIGUSR1, father_handler);
+  signal(SIGINT, father_handler);
 
   // close all pipes
   for (int i = 0; i < nb_pipes; i++) {
@@ -185,38 +177,15 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
         }
     }
 
-
-    while(1)
-    {
+    suseconds_t msec = 0;
       
-      suseconds_t msec = 0;
-      int select_return = 0;
+    int nfds = set_readfds(n, &readfds);
       
-      int nfds = 0;
-      
-      do {
-        /*
-        if(select_return == -1)
-        {
-          printf("error id : %d\n", id_process);
-          perror("Select failed");
-          exit(EXIT_FAILURE);
-        }*/
-
-        FD_ZERO(&readfds);
-        nfds = 0;
-        for(int i = 0; i < n; i++)
-        {
-          FD_SET(pipe_ids_list[2*i], &readfds);
-          nfds = maximum(nfds, pipe_ids_list[2*i]);
-        }
-        
-      } while( (select_return = select(nfds+1, &readfds, NULL, NULL, NULL) ) <= 0);
-
-
-      printf("\nRecu par : %d", id_process);
+    while(select(nfds+1, &readfds, NULL, NULL, NULL) > 0 && continue_communication) {
 
       sleep(1);
+
+      printf("\nRecu par : %d", id_process);
 
       for(int i = 0; i < n; i++)
       {
@@ -240,7 +209,7 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
       else {
         gettimeofday(&timeNow, NULL);
         msec = (timeNow.tv_sec - timeBefore.tv_sec)*1000000 + timeNow.tv_usec - timeBefore.tv_usec;
-        dprintf(file, "Token: %d, Time between 2 receipt of the token : %ld\n", token, msec);
+        dprintf(file, "Token: %d, Time between 2 receptions of the token : %ld\n", token, msec);
         timeBefore = timeNow;
         //write(file, &msec, sizeof(msec));
         //write(file, "\n", 1);
@@ -253,11 +222,28 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
         perror("Write to pipe failed");
         exit(EXIT_FAILURE);
       }
-    }  
-  
+      msec = 0;
+      
+      nfds = set_readfds(n, &readfds);
+        
+    }
 
     close(file);
 }
+
+
+int set_readfds(int n, fd_set *readfds) {
+  int nfds = 0;
+  FD_ZERO(readfds);
+
+  for(int i = 0; i < n; i++)
+  {
+    FD_SET(pipe_ids_list[2*i], readfds);
+    nfds = maximum(nfds, pipe_ids_list[2*i]);
+  }
+  return nfds;
+}
+
 
 void wait_for_children(int n) {
   for (int i = 0; i < nb_processes; i++) {
@@ -286,3 +272,4 @@ void free_pipe_ids_list()
 {
   free(pipe_ids_list);
 }
+

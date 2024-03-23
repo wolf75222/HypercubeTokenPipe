@@ -1,4 +1,0 @@
-First reception -> Token: 2
-Token: 10, Time between 2 receipt of the token : 8016884
-Token: 14, Time between 2 receipt of the token : 4039774
-Token: 20, Time between 2 receipt of the token : 17424145
