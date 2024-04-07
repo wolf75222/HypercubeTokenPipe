@@ -13,8 +13,15 @@ $(EXECUTABLE): $(OBJECTS)
 build/%.o: src/%.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
-clean:
-	rm -f build/*.o build/$(EXECUTABLE)
+clean: clf/clean_files
+	./clf/clean_files
+	rm -f build/*.o build/$(EXECUTABLE) clf/*.o $<
+
+clf/clean_files.o: clf/clean_files.c
+	$(CC) -c $(CFLAGS) $< -o $@
+	
+clf/clean_files: clf/clean_files.o build/Utilities.o
+	$(CC) $(LDFLAGS) $^ -o $@
 
 test: $(EXECUTABLE)
 

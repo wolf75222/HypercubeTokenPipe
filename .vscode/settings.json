@@ -4,6 +4,7 @@
         "unistd.h": "c",
         "time.h": "c",
         "processcommunication.h": "c",
-        "signal.h": "c"
+        "signal.h": "c",
+        "utilities.h": "c"
     }
 }

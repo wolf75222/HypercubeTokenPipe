@@ -1,5 +1,10 @@
 #include "ProcessCommunication.h"
 
+
+#define ENABLE_DISPLAY_DESCRIPTION 0
+#define ENABLE_DISPLAY_TOKEN_JOURNEY 0
+
+
 int nb_pipes = 0;
 int nb_processes = 0;
 int **pipe_fds = NULL;
@@ -7,27 +12,7 @@ pid_t *child_pids = NULL;
 int * pipe_ids_list = NULL;
 int continue_communication = 1;
 
-// Delete files created during previous execution
-void delete_previous_files() 
-{
-    DIR *directory;
-    struct dirent *de;
 
-    directory = opendir("./");
-    if(directory == NULL)
-    {
-      fprintf(stderr, "Unable to open current directory\n");
-      exit(EXIT_FAILURE);
-    }
-    while((de = readdir(directory)) != NULL)
-    {
-        if(hasToBeUnlink(de->d_name))
-        {
-            unlink(de->d_name);
-        }
-    }
-    closedir(directory);
-}
 
 void init_pipes(int n) {
   nb_pipes = (1 << n) * n;
@@ -43,7 +28,9 @@ void init_pipes(int n) {
     exit(EXIT_FAILURE);
   }
 
-  printf("Tubes :");
+  if(ENABLE_DISPLAY_DESCRIPTION)
+    printf("Tubes :");
+
   for (int i = 0; i < nb_pipes; i++) {
     pipe_fds[i] = (int *) malloc(2 * sizeof(int));
     if(pipe_fds[i] == NULL)
@@ -55,9 +42,12 @@ void init_pipes(int n) {
       perror("Pipe initialization failed");
       exit(EXIT_FAILURE);
     }
-    printf(" [%d-%d]", pipe_fds[i][0], pipe_fds[i][1]);
+
+    if(ENABLE_DISPLAY_DESCRIPTION)
+      printf(" [%d-%d]", pipe_fds[i][0], pipe_fds[i][1]);
   }
-  printf("\n");
+  if(ENABLE_DISPLAY_DESCRIPTION)
+    printf("\n");
 }
 
 void create_hypercube_processes(int n) {
@@ -99,13 +89,15 @@ void create_hypercube_processes(int n) {
       for(int i = 0; i < n; i++) {
         int other_p = id_process ^ (1 << i);
 
-        // printf("id : %d <--> other : %d\t\t", id_process, other_p);
+        if(ENABLE_DISPLAY_DESCRIPTION)
+          printf("id : %d <--> other id : %d\t\t", id_process, other_p);
   
         pipe_ids_list[2*i] = pipe_fds[id_process * n + i][0];
         pipe_ids_list[2*i+1] = pipe_fds[other_p * n + i][1];
         close(pipe_fds[id_process * n + i][1]);
         close(pipe_fds[other_p * n + i][0]);
-        // printf("r: %d\t w: %d\n", pipe_ids_list[2*i], pipe_ids_list[2*i+1]);
+        if(ENABLE_DISPLAY_DESCRIPTION)
+          printf("id %d : \t read in: %d\t write in: %d\n", id_process, pipe_ids_list[2*i], pipe_ids_list[2*i+1]);
       }
 
       for (int i = 0; i < nb_pipes; i++) {
@@ -146,7 +138,7 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
     char file_name[256];
     int file;
     fd_set readfds;
-    int pipe_index;
+    int position_bit_dif;
     struct timeval timeBefore, timeNow;
     int token = 0;
     timeBefore.tv_sec = 0;
@@ -167,11 +159,16 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
     if (id_process == 0) {
         gettimeofday(&timeBefore, NULL);
         token++;
-        pipe_index = rand() % n;
+        position_bit_dif = rand() % n;
         dprintf(file, "Starting token: %d\n", token);
 
-        printf("rand : %d\t dest id : %d\t id tube : %d\n", pipe_index, id_process ^ (1 << pipe_index), pipe_ids_list[2*pipe_index+1]);
-        if (write(pipe_ids_list[2*pipe_index+1], &token, sizeof(token)) == -1) {
+        if(ENABLE_DISPLAY_TOKEN_JOURNEY) {
+          printf("\nEnvoyé par : %d", id_process);
+          printf("\nToken = %d\n", token);
+          printf("rand : %d\t dest id : %d\t tube desc : %d\n", position_bit_dif, id_process ^ (1 << position_bit_dif), pipe_ids_list[2*position_bit_dif+1]);
+        }
+        
+        if (write(pipe_ids_list[2*position_bit_dif+1], &token, sizeof(token)) == -1) {
             perror("Write to pipe failed");
             exit(EXIT_FAILURE);
         }
@@ -185,7 +182,8 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
 
       sleep(1);
 
-      printf("\nRecu par : %d", id_process);
+      if(ENABLE_DISPLAY_TOKEN_JOURNEY)
+        printf("\nRecu par : %d", id_process);
 
       for(int i = 0; i < n; i++)
       {
@@ -199,7 +197,9 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
         }
       }
       token++;
-      printf("\nToken = %d\n", token);
+
+      if(ENABLE_DISPLAY_TOKEN_JOURNEY)
+        printf("\nToken = %d\n", token);
       
       if(timeBefore.tv_sec == 0) // first reception of the token
       {
@@ -211,14 +211,14 @@ void token_journey(int id_process, int *pipe_ids_list, int n) {
         msec = (timeNow.tv_sec - timeBefore.tv_sec)*1000000 + timeNow.tv_usec - timeBefore.tv_usec;
         dprintf(file, "Token: %d, Time between 2 receptions of the token : %ld\n", token, msec);
         timeBefore = timeNow;
-        //write(file, &msec, sizeof(msec));
-        //write(file, "\n", 1);
       }
 
-      pipe_index = rand() % n;
-      printf("rand : %d\t dest id : %d\t id tube : %d\n", pipe_index, id_process ^ (1 << pipe_index), pipe_ids_list[2*pipe_index+1]);
-      if (write(pipe_ids_list[2*pipe_index+1], &token, sizeof(int)) == -1) {
-        printf("Error %d\n", id_process);
+      position_bit_dif = rand() % n;
+      if(ENABLE_DISPLAY_TOKEN_JOURNEY)
+        printf("rand : %d\t dest id : %d\t tube desc : %d\n", position_bit_dif, id_process ^ (1 << position_bit_dif), pipe_ids_list[2*position_bit_dif+1]);
+        
+      if (write(pipe_ids_list[2*position_bit_dif+1], &token, sizeof(int)) == -1) {
+        printf("Error processus %d\n", id_process);
         perror("Write to pipe failed");
         exit(EXIT_FAILURE);
       }
@@ -239,7 +239,7 @@ int set_readfds(int n, fd_set *readfds) {
   for(int i = 0; i < n; i++)
   {
     FD_SET(pipe_ids_list[2*i], readfds);
-    nfds = maximum(nfds, pipe_ids_list[2*i]);
+    nfds = nfds > pipe_ids_list[2*i] ? nfds : pipe_ids_list[2*i];
   }
   return nfds;
 }

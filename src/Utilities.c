@@ -1,5 +1,31 @@
 #include "Utilities.h"
 
+
+
+// Delete files created during previous execution
+void delete_previous_files() 
+{
+    DIR *directory;
+    struct dirent *de;
+
+    directory = opendir("./");
+    if(directory == NULL)
+    {
+      fprintf(stderr, "Unable to open current directory\n");
+      exit(EXIT_FAILURE);
+    }
+    while((de = readdir(directory)) != NULL)
+    {
+        if(hasToBeUnlink(de->d_name))
+        {
+            unlink(de->d_name);
+        }
+    }
+    closedir(directory);
+}
+
+
+
 int difference1bit(int a, int b, int *bitDiffPos) {
     int x = a ^ b; // XOR pour trouver les bits différents
     // Vérifier si x est une puissance de 2, ce qui signifie un seul bit différent
@@ -13,14 +39,6 @@ int difference1bit(int a, int b, int *bitDiffPos) {
         return 1; // Retourner vrai si un seul bit diffère
     }
     return 0; // Retourner faux si plus d'un bit diffère
-}
-
-int maximum(int a, int b)
-{
-    if (a > b)
-        return a;
-    else
-        return b;
 }
 
 
@@ -53,3 +71,4 @@ int hasToBeUnlink(char file_name[256])
 }
 
 
+    
